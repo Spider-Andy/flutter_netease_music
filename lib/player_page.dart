@@ -61,7 +61,7 @@ class PlayerState extends State<Player> {
   late Lyric lyric;
 
   // 歌词画板类
-  late LyricPanel lyricPanel;
+  LyricPanel? lyricPanel;
 
   @override
   void initState() {
@@ -93,10 +93,7 @@ class PlayerState extends State<Player> {
         this.position = position;
 
         // 调用歌词中的处理功能
-        lyricPanel.handler(position.inSeconds);
-
-        // 根据position读取当前歌词位置
-        // lyricPanel.getCurrentLyric(position.inSeconds);
+        lyricPanel?.handler(position.inSeconds);
 
         sliderValue = (position.inSeconds / duration.inSeconds);
       });
@@ -158,7 +155,7 @@ class PlayerState extends State<Player> {
     print("----------------------- init... _controllers");
 
     return [
-      lyricPanel,
+      lyricPanel ?? Text('未找到歌词'),
       const Divider(color: Colors.transparent),
       const Divider(
         color: Colors.transparent,

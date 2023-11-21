@@ -11,7 +11,7 @@ void main() => runApp(const MyApp());
 const String coverArt =
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEKU9rkbdInt9fPTlJMjT_gbwlyBqbE60zELhHy_A2yMsJkBmDTw';
 const String mp3Url =
-    'https://wj.kumeiwp.com:912/wj/bl/2023/04/02/e5aff12ad6cc061384d7af317ce06a64.mp3?t=1698197979&key=3b2bda06a77e41c39e7f';
+    'https://webfs.hw.kugou.com/202311211415/996fcc1ba74e780f8d9ad9c50deed6a4/v2/42e3f0ca62cf9a4d6767c6ddf4f6307f/part/0/960161/G338/M08/80/13/clip_8ocBAGTBmnSAATp2ADkVLFtPldA148.mp3';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
