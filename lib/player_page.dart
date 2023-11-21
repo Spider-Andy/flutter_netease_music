@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_netease_music/model/lyric.dart';
