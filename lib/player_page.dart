@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_netease_music/model/lyric.dart';
@@ -25,7 +27,7 @@ class Player extends StatefulWidget {
 
   final Function(bool) onPlaying;
 
-  final Key key;
+  // final Key key;
 
   final Color color;
 
@@ -33,71 +35,72 @@ class Player extends StatefulWidget {
   final bool isLocal;
 
   const Player(
-      {@required this.audioUrl,
-      @required this.onCompleted,
-      @required this.onError,
-      @required this.onNext,
-      @required this.onPrevious,
-      this.key,
-      this.volume: 1.0,
-      this.onPlaying,
-      this.color: Colors.white,
-      this.isLocal: false});
+      {super.key,
+      required this.audioUrl,
+      required this.onCompleted,
+      required this.onError,
+      required this.onNext,
+      required this.onPrevious,
+      this.volume = 1.0,
+      required this.onPlaying,
+      this.color = Colors.white,
+      this.isLocal = false});
 
   @override
   State<StatefulWidget> createState() {
-    return new PlayerState();
+    return PlayerState();
   }
 }
 
 class PlayerState extends State<Player> {
-  AudioPlayer audioPlayer;
+  late AudioPlayer audioPlayer;
   bool isPlaying = false;
-  Duration duration;
-  Duration position;
-  double sliderValue;
-  Lyric lyric;
-  LyricPanel panel;
-  PositionChangeHandler handler;
+  Duration duration = const Duration(seconds: 0);
+  Duration position = const Duration(seconds: 0);
+  late double sliderValue = 0.0;
+  late Lyric lyric;
+
+  // 歌词画板类
+  late LyricPanel lyricPanel;
 
   @override
   void initState() {
     super.initState();
-    print("audioUrl:" + widget.audioUrl);
+    print("Class: PlayerState => initState: audioUrl: \n" + widget.audioUrl);
+
     Utils.getLyricFromTxt().then((Lyric lyric) {
-      print("getLyricFromTxt:" + lyric.slices.length.toString());
+      // print("getLyricFromTxt:" + lyric.slices.length.toString());
       setState(() {
         this.lyric = lyric;
-        panel = new LyricPanel(this.lyric);
+        // 初始化格式画板
+        lyricPanel = LyricPanel(lyric);
       });
     });
 
-    audioPlayer = new AudioPlayer();
-    audioPlayer
-      ..completionHandler = widget.onCompleted
-      ..errorHandler = widget.onError
-      ..durationHandler = ((duration) {
-        setState(() {
-          this.duration = duration;
+    audioPlayer = AudioPlayer();
+    audioPlayer.onDurationChanged.listen(((duration) {
+      setState(() {
+        this.duration = duration;
 
-          if (position != null) {
-            this.sliderValue = (position.inSeconds / duration.inSeconds);
-          }
-        });
-      })
-      ..positionHandler = ((position) {
-        setState(() {
-          this.position = position;
-
-          if (panel != null) {
-            panel.handler(position.inSeconds);
-          }
-
-          if (duration != null) {
-            this.sliderValue = (position.inSeconds / duration.inSeconds);
-          }
-        });
+        sliderValue = (position.inSeconds / duration.inSeconds);
       });
+    }));
+
+    // 歌曲位置改变
+    audioPlayer.onPositionChanged.listen((position) {
+      setState(() {
+        print("onPositionChanged---------------:$position");
+        this.position = position;
+
+        // 调用歌词中的处理功能
+        lyricPanel.handler(position.inSeconds);
+
+        // 根据position读取当前歌词位置
+        // lyricPanel.getCurrentLyric(position.inSeconds);
+
+        sliderValue = (position.inSeconds / duration.inSeconds);
+      });
+    });
   }
 
   @override
@@ -112,36 +115,38 @@ class PlayerState extends State<Player> {
     super.dispose();
   }
 
-  String _formatDuration(Duration d) {
-    int minute = d.inMinutes;
-    int second = (d.inSeconds > 60) ? (d.inSeconds % 60) : d.inSeconds;
-    print(d.inMinutes.toString() + "======" + d.inSeconds.toString());
-    String format = ((minute < 10) ? "0$minute" : "$minute") +
-        ":" +
-        ((second < 10) ? "0$second" : "$second");
-    return format;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return new Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.end,
       children: _controllers(context),
     );
   }
 
+  // 格式化时间
+  String _formatDuration(Duration d) {
+    int minute = d.inMinutes;
+    int second = (d.inSeconds > 60) ? (d.inSeconds % 60) : d.inSeconds;
+    // print(d.inMinutes.toString() + "======" + d.inSeconds.toString());
+    String format =
+        "${(minute < 10) ? "0$minute" : "$minute"}:${(second < 10) ? "0$second" : "$second"}";
+    return format;
+  }
+
+  // 时间进度条
   Widget _timer(BuildContext context) {
-    var style = new TextStyle(color: widget.color);
-    return new Row(
+    var style = TextStyle(color: widget.color);
+    print("------------- $position.inSeconds");
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       mainAxisSize: MainAxisSize.max,
       children: <Widget>[
-        new Text(
+        Text(
           position == null ? "--:--" : _formatDuration(position),
           style: style,
         ),
-        new Text(
+        Text(
           duration == null ? "--:--" : _formatDuration(duration),
           style: style,
         ),
@@ -150,40 +155,39 @@ class PlayerState extends State<Player> {
   }
 
   List<Widget> _controllers(BuildContext context) {
-    print("_controllers");
+    print("----------------------- init... _controllers");
 
     return [
-      lyric != null ? panel : null,
+      lyricPanel,
       const Divider(color: Colors.transparent),
       const Divider(
         color: Colors.transparent,
         height: 32.0,
       ),
-      new Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-        child: new Row(
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.0),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
-            new IconButton(
+            IconButton(
               onPressed: () {
                 widget.onPrevious();
               },
-              icon: new Icon(
+              icon: Icon(
                 Icons.skip_previous,
                 size: 32.0,
                 color: widget.color,
               ),
             ),
-            new IconButton(
+            IconButton(
               onPressed: () {
-                if (isPlaying)
+                if (isPlaying) {
                   audioPlayer.pause();
-                else {
+                } else {
                   audioPlayer.play(
-                    widget.audioUrl,
-                    isLocal: widget.isLocal,
+                    UrlSource(widget.audioUrl),
                     volume: widget.volume,
                   );
                 }
@@ -193,15 +197,15 @@ class PlayerState extends State<Player> {
                 });
               },
               padding: const EdgeInsets.all(0.0),
-              icon: new Icon(
+              icon: Icon(
                 isPlaying ? Icons.pause : Icons.play_arrow,
                 size: 48.0,
                 color: widget.color,
               ),
             ),
-            new IconButton(
+            IconButton(
               onPressed: widget.onNext,
-              icon: new Icon(
+              icon: Icon(
                 Icons.skip_next,
                 size: 32.0,
                 color: widget.color,
@@ -210,18 +214,16 @@ class PlayerState extends State<Player> {
           ],
         ),
       ),
-      new Slider(
+      Slider(
         onChanged: (newValue) {
-          if (duration != null) {
-            int seconds = (duration.inSeconds * newValue).round();
-            print("audioPlayer.seek: $seconds");
-            audioPlayer.seek(new Duration(seconds: seconds));
-          }
+          int seconds = (duration.inSeconds * newValue).round();
+          print("audioPlayer.seek: $seconds");
+          audioPlayer.seek(Duration(seconds: seconds));
         },
         value: sliderValue ?? 0.0,
         activeColor: widget.color,
       ),
-      new Padding(
+      Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 16.0,
           vertical: 8.0,

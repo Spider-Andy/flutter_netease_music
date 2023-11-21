@@ -5,11 +5,13 @@ class Lyric {
 }
 
 class LyricSlice {
-  int in_second; //歌词片段开始时间
-  String slice; //片段内容
+  static bool empty = true;
 
-  Lyric(int in_second, String slice) {
-    this.in_second = in_second;
+  late int inSecond; // 歌词片段开始时间
+  late String slice; // 片段内容
+
+  Lyric(int inSecond, String slice) {
+    this.inSecond = inSecond;
     this.slice = slice;
   }
 }
